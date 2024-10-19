@@ -1,0 +1,77 @@
+#pragma kernel LDR2Luminunce
+#pragma kernel LDR2HDR
+#pragma kernel DebugBreathFirst
+#pragma kernel EnergyConservation
+
+//-------------------------------------
+
+
+
+//-------LDR2Luminunce--------------------
+
+Texture2D<float4> LDR2L_InputTex;
+RWBuffer<float> LDR2L_ResultLuminunce;
+RWTexture2D<float4>DebugLuminance;
+int width, height;
+float lr, lg, lb;
+[numthreads(8, 8, 1)]
+void LDR2Luminunce(uint3 id : SV_DispatchThreadID)
+{   
+    float4 pixel = LDR2L_InputTex[id.xy];
+        
+    int index = id.y * width + id.x;
+    LDR2L_ResultLuminunce[index] = dot(pixel.rgb, float3(lr, lg,lb));
+    DebugLuminance[id.xy] = float4(LDR2L_ResultLuminunce[index], 0, 0, 1);
+
+}
+
+//-------LDR2HDR--------------------
+StructuredBuffer<float> LDR2HDR_Luminances;
+Texture2D<float4> LDR2HDR_LDR;
+RWTexture2D<float4> LDR2HDR_HDR;
+RWBuffer<float4> HDRtexBuffer;
+[numthreads(8, 8, 1)]
+void LDR2HDR(uint3 id : SV_DispatchThreadID)
+{
+    float4 pixel = LDR2HDR_LDR[id.xy];
+    float luminance = LDR2HDR_Luminances[id.x + id.y * width];
+    float k = 10 * pow(luminance, 10) + 1.8;
+    LDR2HDR_HDR[id.xy] = float4(k * pixel.r, k * pixel.g, k * pixel.b, 1);
+    HDRtexBuffer[id.x + id.y * width] = float4(k * pixel.r, k * pixel.g, k * pixel.b, 1);
+    
+}
+//--------DebugBreathFirst---------------
+StructuredBuffer<int> DBf_Labels;
+RWTexture2D<float4> DebugDBF;
+int LightsCount;
+[numthreads(8, 8, 1)]
+void DebugBreathFirst(uint3 id : SV_DispatchThreadID)
+{
+    if (DBf_Labels[id.x + id.y * width]==1)
+        DebugDBF[id.xy] = float4(1, 0, 0, 1);
+    else if (DBf_Labels[id.x + id.y * width] == 2)
+        DebugDBF[id.xy] = float4(0, 1, 0, 1);
+    else if (DBf_Labels[id.x + id.y * width] == 3)
+        DebugDBF[id.xy] = float4(0, 0,1, 1);
+    else
+        DebugDBF[id.xy] = float4(0, 0, 0, 1);
+}
+
+//-------EnergyConservation--------------------
+StructuredBuffer<float4> EC_HDRtexBuffer;
+RWTexture2D<float4> EC_HDROutput;
+RWBuffer<float4> EC_HDRTexBuffer;
+float LuminanceThreshold;
+float conserve(float pic)
+{
+    return min(LuminanceThreshold, pic - LuminanceThreshold);
+}
+[numthreads(8, 8, 1)]
+void EnergyConservation(uint3 id : SV_DispatchThreadID)
+{
+    float4 pic = EC_HDRtexBuffer[id.x+id.y*width];
+    EC_HDROutput[id.xy] = float4(conserve(pic.r), conserve(pic.g), conserve(pic.b), 1);
+    EC_HDRTexBuffer[id.x + id.y * width] = float4(conserve(pic.r), conserve(pic.g), conserve(pic.b), 1);
+}
+
+
