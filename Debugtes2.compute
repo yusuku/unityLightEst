@@ -1,0 +1,97 @@
+#pragma kernel Irradiance
+#pragma kernel LabelsMask
+#pragma kernel LightsWeightCoordinates
+
+//-------Irradiance--------------------
+int width, height;
+float IR_LuminanceThresholding;
+StructuredBuffer<float4> IR_HDRtexBuffer;
+StructuredBuffer<float> IR_LuminunceInput;
+RWBuffer<float4> IR_IrradianceBuffer;
+
+RWTexture2D<float4> IR_ResultIrradiance;
+
+float PolarPhi(int x, int width)
+{
+    float PI = 3.14159265358979323846f;
+    float u = x / (float) width;
+    float phi = -2 * PI * u + PI;
+    return phi;
+}
+float PolarTheta(int y, int height)
+{
+
+    float PI = 3.14159265358979323846f;
+    float v = y / (float) height;
+    float theta = -PI * v + PI;
+    return theta;
+}
+[numthreads(8, 8, 1)]
+void Irradiance(uint3 id : SV_DispatchThreadID)
+{
+    float PI = 3.14159265358979323846f;
+    float4 Lp = IR_HDRtexBuffer[id.x+id.y*width];
+    float Yt = IR_LuminanceThresholding;
+    float Yp = IR_LuminunceInput[id.x + id.y * width];
+    
+    float Dphi = 2*PI / (float)width;
+    float DOmega = Dphi * abs(100*cos(PolarTheta(id.y + 1, height)) -100* cos(PolarTheta(id.y, height)));
+
+   
+    float ratio = min(1.0f, Yt / Yp);
+    float4 Ep = DOmega * (Lp - Lp * ratio);
+    float4 deb = Ep;
+    IR_ResultIrradiance[id.xy] = float4(deb.r, deb.g, deb.b, 1);
+    IR_IrradianceBuffer[id.x + id.y * width] = float4(deb.r, deb.g, deb.b, 1);
+}
+
+//-------LabelsMask--------------------
+StructuredBuffer<int> labels;
+StructuredBuffer<float4> LM_IrradianceInput;
+RWTexture2D<float4> LM_ResultLightsMask;
+RWBuffer<float4> LM_ResultLightsMaskBuffer;
+int label;
+[numthreads(8, 8, 1)]
+void LabelsMask(uint3 id : SV_DispatchThreadID)
+{
+    int index = id.x + id.y * width;
+    if (labels[index] == label)
+    {
+        LM_ResultLightsMask[id.xy] = float4(label / (float) 3, 0, 0, 1); //LM_IrradianceInput[index];
+        LM_ResultLightsMaskBuffer[index] = float4(LM_IrradianceInput[index].r, LM_IrradianceInput[index].g, LM_IrradianceInput[index].b,1);
+
+    }
+    else
+    {
+        LM_ResultLightsMask[id.xy] = float4(0, 0, 0, 0);
+        LM_ResultLightsMaskBuffer[index] = float4(0, 0, 0, 0);
+    }
+
+}
+
+//-------LightsWeightCoordinates-------------------
+
+
+float2 polarCoordinates(int x, int y, int w, int h)
+{
+    float PI = 3.14159265358979323846f;
+    float u = x / (float) width;
+    float v = y / (float) height;
+    float phi = -2 * PI * u + PI;    
+    float theta = -PI * v + PI;
+    return float2(phi, theta);
+
+}
+StructuredBuffer<float4> LWC_LabelIrradianceInput;
+RWTexture2D<float4> ResultWeighted;
+RWBuffer<float2> WeightedPolarBuffer;
+[numthreads(8, 8, 1)]
+void LightsWeightCoordinates(uint3 id : SV_DispatchThreadID)
+{
+    float PI = 3.14159265358979323846f;
+    int idx = id.x + id.y * width;
+    float YEp = dot(LWC_LabelIrradianceInput[idx], float4(0.3, 0.59, 0.11, 0));
+    float2 result = YEp * polarCoordinates(id.x, id.y, width, height);
+    ResultWeighted[id.xy] = float4((result.x + YEp * PI / 2) / YEp, result.y / YEp, 0, 1);
+    WeightedPolarBuffer[idx] = result;
+}
