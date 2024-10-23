@@ -1,0 +1,17 @@
+#pragma kernel LDR2HDR
+
+int width, height;
+
+float lr, lg, lb;
+Texture2D<float4> LDR2HDR_LDR;
+RWBuffer<float3> HDRtexBuffer;
+[numthreads(8, 8, 1)]
+void LDR2HDR(uint3 id : SV_DispatchThreadID)
+{
+    float4 pixel = LDR2HDR_LDR[id.xy];
+    float luminance = dot(pixel.rgb, float3(lr, lg, lb));
+    float k = 10 * pow(luminance, 10) + 1.8;
+   
+    HDRtexBuffer[id.x + id.y * width] = float3(k * pixel.r, k * pixel.g, k * pixel.b);
+    
+}
