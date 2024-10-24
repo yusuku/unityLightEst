@@ -7,21 +7,60 @@ public class CPURunEstimation : MonoBehaviour
 {
     public ComputeShader cs;
     public RenderTexture LDRtex;
+    GameObject[] LIghts;
+    GameObject[] Cubes;
+    public GameObject light;
+    public GameObject Cube;
+    public Transform parent;
 
     public GameObject HDRPlane;
     public GameObject LabelPlane;
     public GameObject IrradiancePlane;
     public GameObject ResultPositionPlane;
 
+    
     int width, height;
     Texture2D ResultPositiontexture;
+
+    public class EstiVales
+    {
+        public Vector2[] polar;
+        public Vector3[] ELs;
+
+        public EstiVales(Vector2[] polar, Vector3[] ELs)
+        {
+          
+            this.ELs = ELs;
+            this.polar = polar;
+
+        }
+    }
     // Start is called before the first frame update
     void Start()
     {
-        Vector2[] polar = Estimation();
-        foreach (Vector2 p in polar)
+        //------------- Estimation-----------------
+        EstiVales estivalue = Estimation();
+
+        LIghts = new GameObject[estivalue.polar.Length];
+        Cubes= new GameObject[estivalue.polar.Length];
+
+
+        Vector4[] EstiPosition = new Vector4[width * height];
+        float lr = 0.3f, lg = 0.59f, lb = 0.11f;
+        for (int i = 1; i < estivalue.polar.Length; i++)
         {
-            Debug.Log(p * 180f / Mathf.PI);
+
+            var p = estivalue.polar[i];
+            Vector2 XYposition = Polar2XY(p.x, p.y, width, height);
+            EstiPosition[(int)XYposition.x + (int)XYposition.y * width] = new Vector4(1, 0, 0, 1);
+
+
+            Vector3 position = PolarTo3DPosition(p);
+            Color color = new Color(estivalue.ELs[i].x, estivalue.ELs[i].y, estivalue.ELs[i].z, 1);
+            float intensity = Vector3.Dot(estivalue.ELs[i], new Vector3(lr, lg, lb));
+            LIghts[i] = CreateLight(position, color, light, intensity, parent);
+            Cubes[i] = CreateCube(position,Cube,parent);
+            
         }
         ResultPositiontexture = new Texture2D(width, height, TextureFormat.RGB24, false);
         
@@ -31,14 +70,36 @@ public class CPURunEstimation : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Vector2[] polar = Estimation();
-        Vector4[] EstiPosition = new Vector4[width * height];
-        for (int i=1;i<polar.Length;i++)
+        for (int i = 0; i < LIghts.Length; i++)
         {
-            var p = polar[i];
+            if (LIghts[i] != null)
+            {
+                Destroy(LIghts[i]);
+                Destroy(Cubes[i]);
+            }
+        }
+        EstiVales estivalue = Estimation();
+        
+        LIghts = new GameObject[estivalue.polar.Length];
+
+        Cubes = new GameObject[estivalue.polar.Length];
+
+        Vector4[] EstiPosition = new Vector4[width * height];
+        float lr = 0.3f, lg = 0.59f, lb = 0.11f;
+        for (int i=1;i< estivalue.polar.Length; i++)
+        {
+            var p = estivalue.polar[i];
             Debug.Log(p * 180f / Mathf.PI);
-            Vector2 position = Polar2XY(p.x, p.y,width,height);
-            Debug.Log("x:"+(int)position.x+" y:"+(int)position.y);
+            Vector2 XYposition = Polar2XY(p.x, p.y,width,height);
+            Debug.Log("x:"+(int)XYposition.x+" y:"+(int)XYposition.y);
+
+            Vector3 position = PolarTo3DPosition(p);
+
+            Color color = new Color(estivalue.ELs[i].x, estivalue.ELs[i].y, estivalue.ELs[i].z, 1);
+            float intensity = Vector3.Dot(estivalue.ELs[i],new Vector3(lr,lg,lb));
+
+            LIghts[i] = CreateLight(position, color, light, intensity, parent);
+            Cubes[i] = CreateCube(position, Cube, parent);
             EstiPosition[(int)position.x + (int)position.y * width] = new Vector4(1, 0, 0, 1);
         }
         ApplyVector4ArrayToTexture(EstiPosition, ResultPositiontexture);
@@ -46,7 +107,37 @@ public class CPURunEstimation : MonoBehaviour
 
     }
 
-    Vector2[] Estimation()
+    GameObject CreateCube(Vector3 position,GameObject cube, Transform parent)
+    {
+        GameObject cubeInstance = Instantiate(cube, position, Quaternion.identity, parent);
+        
+        return cubeInstance;
+    }
+
+    GameObject CreateLight(Vector3 position, Color color, GameObject lightPrefab, float intensity, Transform parent)
+    {
+        GameObject lightInstance = Instantiate(lightPrefab, position, Quaternion.identity, parent);
+        Light directionalLight = lightInstance.GetComponent<Light>();
+        if (directionalLight != null)
+        {
+            directionalLight.type = LightType.Directional;  // ライトタイプをディレクショナルに設定
+            directionalLight.color = color;                 // ライトの色を設定
+            directionalLight.intensity = intensity;         // 計算した強度を使用
+            directionalLight.transform.LookAt(Vector3.zero); // 原点に向ける
+            directionalLight.shadows = LightShadows.Soft;
+        }
+        return lightInstance;
+    }
+    Vector3 PolarTo3DPosition(Vector2 Polar)
+    {
+        float r = 1.0f;
+        float x = r * Mathf.Sin(Polar.y) * Mathf.Cos(Polar.x);
+        float y = r * Mathf.Cos(Polar.y);
+        float z = r * Mathf.Sin(Polar.y) * Mathf.Cos(Polar.x);
+        return new Vector3(x, y, z);
+    }
+
+    EstiVales Estimation()
     {
         width = LDRtex.width; height = LDRtex.height;
 
@@ -118,7 +209,8 @@ public class CPURunEstimation : MonoBehaviour
         IrradiancePlane.GetComponent<Renderer>().material.mainTexture = Irradiancetexture;
 
         //---------Light's position--------------------
-        Vector2[] PolarPosion = new Vector2[LightCount + 1];
+
+        Vector2[] PolarPosion = new Vector2[LightCount + 1];// Polar 0:None, 1-LightCount: Light
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
@@ -143,7 +235,9 @@ public class CPURunEstimation : MonoBehaviour
             PolarPosion[i] /= YEl;
         }
 
-        return PolarPosion;
+        EstiVales estivlaues = new EstiVales(PolarPosion, Els);
+
+        return estivlaues;
     }
 
 
