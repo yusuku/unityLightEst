@@ -11,11 +11,11 @@ public class CPURunEstimation : MonoBehaviour
     public GameObject HDRPlane;
     public GameObject LabelPlane;
     public GameObject IrradiancePlane;
-
+    int width, height;
     // Start is called before the first frame update
     void Start()
     {
-        int width = LDRtex.width, height = LDRtex.height;
+        width = LDRtex.width; height = LDRtex.height;
 
 
 
@@ -56,26 +56,32 @@ public class CPURunEstimation : MonoBehaviour
         ////--------Detected Lights Properties----------
         ////-------Pixel Irradiance,Lights irradiance--------------
         Vector4[] Irradiances = new Vector4[width * height];
+        Vector4[] DebugIra=new Vector4[width * height];
         Vector3[] Els = new Vector3[LightCount + 1];
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
             {
                 int idx = x + y * width;
+                if (x == 0 && y == 0)
+                {
+                    DebugIra[idx] = new Vector4(1, 0, 0, 1);
+                }
                 if (labels[idx] != 0)
                 {
-                    float the = y / (float)height * Mathf.PI, the1 = (y + 1) / (float)height * Mathf.PI;
-                    float OmegaP = 2 * Mathf.PI / width * 100* (Mathf.Cos(the) - Mathf.Cos(the1));
+                    float OmegaP = GetPixelSolidAngle(x, y);
                     Vector3 HDR = new Vector3(HDRtex[idx].x, HDRtex[idx].y, HDRtex[idx].z);
                     Vector3 Ep = OmegaP * (HDR - HDR * Mathf.Min(1, Yt / Luminances[idx]));
                     Irradiances[idx] = new Vector4(Ep.x, Ep.y, Ep.z , labels[idx]);
+                    DebugIra[idx] = new Vector4(Ep.x*10, Ep.y*10, Ep.z * 10, 1);
                     Els[labels[idx]] += Ep;
                 }
             }
         }
+        
 
         Texture2D Irradiancetexture = new Texture2D(width, height, TextureFormat.RGB24, false);
-        ApplyVector4ArrayToTexture(Irradiances, Irradiancetexture);
+        ApplyVector4ArrayToTexture(DebugIra, Irradiancetexture);
         IrradiancePlane.GetComponent<Renderer>().material.mainTexture = Irradiancetexture;
 
         //---------Light's position--------------------
@@ -85,11 +91,13 @@ public class CPURunEstimation : MonoBehaviour
             for (int y = 0; y < height; y++)
             {
                 int idx = x + y * width;
+                
+               
                 if (labels[idx] != 0)
                 {
                     float YEp = Irradiances[idx].x * lr + Irradiances[idx].y * lg + Irradiances[idx].z * lb;
                     Vector2 PixelPolar = XY2Polar(x, y, width, height);
-                    
+                    Debug.Log("label: " + labels[idx] + " polar: " + PixelPolar*180f/Mathf.PI);
                     PolarPosion[labels[idx]] += YEp * PixelPolar;
                     
                 }
@@ -104,12 +112,38 @@ public class CPURunEstimation : MonoBehaviour
             Debug.Log(PolarPosion[i]*180f/Mathf.PI);
 
         }
+       
     }
 
     // Update is called once per frame
     void Update()
     {
 
+    }
+    public float CalculateSolidAngle(float theta1, float theta2, float dPhi)
+    {
+        return (Mathf.Cos(theta1) - Mathf.Cos(theta2)) * dPhi;
+    }
+
+    public (float theta1, float theta2, float dPhi) PixelToSpherical(int x, int y)
+    {
+        // Convert pixel x, y to phi (longitude) and theta (latitude) in radians
+        float dPhi = Mathf.Deg2Rad * (360f / width);
+        float thetaMid = Mathf.Deg2Rad * (180f-180f*( y / (float)height));
+        float dTheta = Mathf.Deg2Rad * (180f / height);
+
+        float theta1 = thetaMid - dTheta / 2;
+        float theta2 = thetaMid + dTheta / 2;
+
+        return (theta1, theta2, dPhi);
+    }
+    public float GetPixelSolidAngle(int x, int y)
+    {
+        // Convert pixel (x, y) to spherical coordinates (theta1, theta2, dPhi)
+        var (theta1, theta2, dPhi) = PixelToSpherical(x, y);
+
+        // Calculate and return the solid angle
+        return CalculateSolidAngle(theta1, theta2, dPhi);
     }
     void ApplyVector4ArrayToTexture(Vector4[] vectors, Texture2D tex)
     {
@@ -234,7 +268,7 @@ public class CPURunEstimation : MonoBehaviour
     {
         Vector2 polar;
 
-        polar = new Vector2((1 - x / (float)width) * 2 * Mathf.PI - Mathf.PI, y / (float)height * Mathf.PI);
+        polar = new Vector2((1 - x / (float)width) * 2 * Mathf.PI - Mathf.PI, Mathf.PI -  y / (float)height * Mathf.PI);
 
         return polar;
     }
