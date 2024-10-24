@@ -6,7 +6,7 @@ using UnityEngine;
 public class CPURunEstimation : MonoBehaviour
 {
     public ComputeShader cs;
-    public Texture2D LDRtex;
+    public RenderTexture LDRtex;
 
     public GameObject HDRPlane;
     public GameObject LabelPlane;
@@ -14,6 +14,27 @@ public class CPURunEstimation : MonoBehaviour
     int width, height;
     // Start is called before the first frame update
     void Start()
+    {
+        Vector2[] polar=Estimation();
+        foreach(Vector2 p in polar)
+        {
+            Debug.Log(p*180f/Mathf.PI);
+        }
+
+
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        Vector2[] polar = Estimation();
+        foreach (Vector2 p in polar)
+        {
+            Debug.Log(p * 180f / Mathf.PI);
+        }
+    }
+
+    Vector2[] Estimation()
     {
         width = LDRtex.width; height = LDRtex.height;
 
@@ -56,7 +77,7 @@ public class CPURunEstimation : MonoBehaviour
         ////--------Detected Lights Properties----------
         ////-------Pixel Irradiance,Lights irradiance--------------
         Vector4[] Irradiances = new Vector4[width * height];
-        Vector4[] DebugIra=new Vector4[width * height];
+        Vector4[] DebugIra = new Vector4[width * height];
         Vector3[] Els = new Vector3[LightCount + 1];
         for (int x = 0; x < width; x++)
         {
@@ -72,13 +93,13 @@ public class CPURunEstimation : MonoBehaviour
                     float OmegaP = GetPixelSolidAngle(x, y);
                     Vector3 HDR = new Vector3(HDRtex[idx].x, HDRtex[idx].y, HDRtex[idx].z);
                     Vector3 Ep = OmegaP * (HDR - HDR * Mathf.Min(1, Yt / Luminances[idx]));
-                    Irradiances[idx] = new Vector4(Ep.x, Ep.y, Ep.z , labels[idx]);
-                    DebugIra[idx] = new Vector4(Ep.x*10, Ep.y*10, Ep.z * 10, 1);
+                    Irradiances[idx] = new Vector4(Ep.x, Ep.y, Ep.z, labels[idx]);
+                    DebugIra[idx] = new Vector4(Ep.x * 10, Ep.y * 10, Ep.z * 10, 1);
                     Els[labels[idx]] += Ep;
                 }
             }
         }
-        
+
 
         Texture2D Irradiancetexture = new Texture2D(width, height, TextureFormat.RGB24, false);
         ApplyVector4ArrayToTexture(DebugIra, Irradiancetexture);
@@ -91,15 +112,15 @@ public class CPURunEstimation : MonoBehaviour
             for (int y = 0; y < height; y++)
             {
                 int idx = x + y * width;
-                
-               
+
+
                 if (labels[idx] != 0)
                 {
                     float YEp = Irradiances[idx].x * lr + Irradiances[idx].y * lg + Irradiances[idx].z * lb;
                     Vector2 PixelPolar = XY2Polar(x, y, width, height);
-                    Debug.Log("label: " + labels[idx] + " polar: " + PixelPolar*180f/Mathf.PI);
+                    Debug.Log("label: " + labels[idx] + " polar: " + PixelPolar * 180f / Mathf.PI);
                     PolarPosion[labels[idx]] += YEp * PixelPolar;
-                    
+
                 }
             }
         }
@@ -107,19 +128,18 @@ public class CPURunEstimation : MonoBehaviour
         for (int i = 1; i <= LightCount; i++)
         {
             float YEl = Els[i].x * lr + Els[i].y * lg + Els[i].z * lb;
-
             PolarPosion[i] /= YEl;
-            Debug.Log(PolarPosion[i]*180f/Mathf.PI);
-
         }
-       
+
+        return PolarPosion;
     }
 
-    // Update is called once per frame
-    void Update()
-    {
 
-    }
+
+
+
+
+
     public float CalculateSolidAngle(float theta1, float theta2, float dPhi)
     {
         return (Mathf.Cos(theta1) - Mathf.Cos(theta2)) * dPhi;
@@ -176,7 +196,7 @@ public class CPURunEstimation : MonoBehaviour
         tex.Apply();  // Apply() を呼ばないと変更が反映されない
     }
 
-    Vector4[] InverseToneMapping(Texture2D LDR)
+    Vector4[] InverseToneMapping(RenderTexture LDR)
     {
         int width = LDRtex.width, height = LDRtex.height;
         Vector4[] HDRtex = new Vector4[width * height];
