@@ -1,4 +1,4 @@
-Ôªøusing System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
@@ -11,16 +11,20 @@ public class CPURunEstimation : MonoBehaviour
     public GameObject HDRPlane;
     public GameObject LabelPlane;
     public GameObject IrradiancePlane;
+    public GameObject ResultPositionPlane;
+
     int width, height;
+    Texture2D ResultPositiontexture;
     // Start is called before the first frame update
     void Start()
     {
-        Vector2[] polar=Estimation();
-        foreach(Vector2 p in polar)
+        Vector2[] polar = Estimation();
+        foreach (Vector2 p in polar)
         {
-            Debug.Log(p*180f/Mathf.PI);
+            Debug.Log(p * 180f / Mathf.PI);
         }
-
+        ResultPositiontexture = new Texture2D(width, height, TextureFormat.RGB24, false);
+        
 
     }
 
@@ -28,10 +32,18 @@ public class CPURunEstimation : MonoBehaviour
     void Update()
     {
         Vector2[] polar = Estimation();
-        foreach (Vector2 p in polar)
+        Vector4[] EstiPosition = new Vector4[width * height];
+        for (int i=1;i<polar.Length;i++)
         {
+            var p = polar[i];
             Debug.Log(p * 180f / Mathf.PI);
+            Vector2 position = Polar2XY(p.x, p.y,width,height);
+            Debug.Log("x:"+(int)position.x+" y:"+(int)position.y);
+            EstiPosition[(int)position.x + (int)position.y * width] = new Vector4(1, 0, 0, 1);
         }
+        ApplyVector4ArrayToTexture(EstiPosition, ResultPositiontexture);
+        ResultPositionPlane.GetComponent<Renderer>().material.mainTexture = ResultPositiontexture;
+
     }
 
     Vector2[] Estimation()
@@ -149,7 +161,7 @@ public class CPURunEstimation : MonoBehaviour
     {
         // Convert pixel x, y to phi (longitude) and theta (latitude) in radians
         float dPhi = Mathf.Deg2Rad * (360f / width);
-        float thetaMid = Mathf.Deg2Rad * (180f-180f*( y / (float)height));
+        float thetaMid = Mathf.Deg2Rad * (180f - 180f * (y / (float)height));
         float dTheta = Mathf.Deg2Rad * (180f / height);
 
         float theta1 = thetaMid - dTheta / 2;
@@ -169,31 +181,31 @@ public class CPURunEstimation : MonoBehaviour
     {
         Color[] colors = new Color[vectors.Length];
 
-        // Vector3„ÇíColor„Å´Â§âÊèõ (x, y, z „Çí RGB „Å´„Éû„ÉÉ„Éî„É≥„Ç∞)
+        // Vector3ÇColorÇ…ïœä∑ (x, y, z Ç RGB Ç…É}ÉbÉsÉìÉO)
         for (int i = 0; i < vectors.Length; i++)
         {
             Vector4 v = vectors[i];
-            colors[i] = new Color(v.x, v.y, v.z,1);
+            colors[i] = new Color(v.x, v.y, v.z, 1);
         }
 
-        // „ÉÜ„ÇØ„Çπ„ÉÅ„É£„Å´Ëâ≤„Éá„Éº„Çø„ÇíÈÅ©Áî®
+        // ÉeÉNÉXÉ`ÉÉÇ…êFÉfÅ[É^ÇìKóp
         tex.SetPixels(colors);
-        tex.Apply();  // Apply() „ÇíÂëº„Å∞„Å™„ÅÑ„Å®Â§âÊõ¥„ÅåÂèçÊò†„Åï„Çå„Å™„ÅÑ
+        tex.Apply();  // Apply() ÇåƒÇŒÇ»Ç¢Ç∆ïœçXÇ™îΩâfÇ≥ÇÍÇ»Ç¢
     }
     void ApplyIntArrayToTexture(int[] vectors, Texture2D tex)
     {
         Color[] colors = new Color[vectors.Length];
 
-        // Vector3„ÇíColor„Å´Â§âÊèõ (x, y, z „Çí RGB „Å´„Éû„ÉÉ„Éî„É≥„Ç∞)
+        // Vector3ÇColorÇ…ïœä∑ (x, y, z Ç RGB Ç…É}ÉbÉsÉìÉO)
         for (int i = 0; i < vectors.Length; i++)
         {
             int v = vectors[i];
             colors[i] = new Color(v, v, v, 1);
         }
 
-        // „ÉÜ„ÇØ„Çπ„ÉÅ„É£„Å´Ëâ≤„Éá„Éº„Çø„ÇíÈÅ©Áî®
+        // ÉeÉNÉXÉ`ÉÉÇ…êFÉfÅ[É^ÇìKóp
         tex.SetPixels(colors);
-        tex.Apply();  // Apply() „ÇíÂëº„Å∞„Å™„ÅÑ„Å®Â§âÊõ¥„ÅåÂèçÊò†„Åï„Çå„Å™„ÅÑ
+        tex.Apply();  // Apply() ÇåƒÇŒÇ»Ç¢Ç∆ïœçXÇ™îΩâfÇ≥ÇÍÇ»Ç¢
     }
 
     Vector4[] InverseToneMapping(RenderTexture LDR)
@@ -223,19 +235,19 @@ public class CPURunEstimation : MonoBehaviour
     }
     int LabelBreadthFirstSerch(float[] InputTex, int[] labels, int width, int height, float LuminanceThreshold)
     {
-       
+
         int componentCount = 0;
 
-      
+
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
             {
-                
+
                 if (labels[x + y * width] == 0 && IsAboveThreshold(InputTex[x + y * width], LuminanceThreshold))
                 {
                     componentCount++;
-                   
+
                     int count = BFS(x, y, componentCount, InputTex, labels, width, height, LuminanceThreshold);
                     Debug.Log("componentCount:  " + componentCount + "  : " + count);
                 }
@@ -257,7 +269,7 @@ public class CPURunEstimation : MonoBehaviour
         queue.Enqueue(new Vector2Int(startX, startY));
         labels[startX + startY * width] = label;
         int count = 1;
- 
+
         int[] dx = { 1, -1, 0, 0 };
         int[] dy = { 0, 0, 1, -1 };
 
@@ -272,7 +284,7 @@ public class CPURunEstimation : MonoBehaviour
                 int nx = x + dx[i];
                 int ny = y + dy[i];
 
-     
+
                 if (nx >= 0 && nx < width && ny >= 0 && ny < height && labels[nx + ny * width] == 0 && IsAboveThreshold(pixels[nx + ny * width], LuminanceThreshold))
                 {
                     queue.Enqueue(new Vector2Int(nx, ny));
@@ -288,10 +300,18 @@ public class CPURunEstimation : MonoBehaviour
     {
         Vector2 polar;
 
-        polar = new Vector2((1 - x / (float)width) * 2 * Mathf.PI - Mathf.PI, Mathf.PI -  y / (float)height * Mathf.PI);
+        polar = new Vector2((1 - x / (float)width) * 2 * Mathf.PI - Mathf.PI, Mathf.PI - y / (float)height * Mathf.PI);
 
         return polar;
     }
+    Vector2 Polar2XY( float phi,float theta, int width, int height)
+    {
+        Vector2 xy;
+        float x = width * (1 -( (phi + Mathf.PI) / (2 * Mathf.PI)));
+        float y = height * (Mathf.PI - theta) / Mathf.PI;
+        xy = new Vector2(x, y);
 
+        return xy;
+    }
 
 }
