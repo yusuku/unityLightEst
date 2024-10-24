@@ -55,7 +55,7 @@ public class CPURunEstimation : MonoBehaviour
             EstiPosition[(int)XYposition.x + (int)XYposition.y * width] = new Vector4(1, 0, 0, 1);
 
 
-            Vector3 position = PolarTo3DPosition(p);
+            Vector3 position = PolarToCartesian(p.x, p.y);
             Color color = new Color(estivalue.ELs[i].x, estivalue.ELs[i].y, estivalue.ELs[i].z, 1);
             float intensity = Vector3.Dot(estivalue.ELs[i], new Vector3(lr, lg, lb));
             LIghts[i] = CreateLight(position, color, light, intensity, parent);
@@ -81,7 +81,6 @@ public class CPURunEstimation : MonoBehaviour
         EstiVales estivalue = Estimation();
         
         LIghts = new GameObject[estivalue.polar.Length];
-
         Cubes = new GameObject[estivalue.polar.Length];
 
         Vector4[] EstiPosition = new Vector4[width * height];
@@ -89,18 +88,17 @@ public class CPURunEstimation : MonoBehaviour
         for (int i=1;i< estivalue.polar.Length; i++)
         {
             var p = estivalue.polar[i];
-            Debug.Log(p * 180f / Mathf.PI);
+          
             Vector2 XYposition = Polar2XY(p.x, p.y,width,height);
-            Debug.Log("x:"+(int)XYposition.x+" y:"+(int)XYposition.y);
+          
+            EstiPosition[(int)XYposition.x + (int)XYposition.y * width] = new Vector4(1, 0, 0, 1);
 
-            Vector3 position = PolarTo3DPosition(p);
 
+            Vector3 position = PolarToCartesian(p.x,p.y);
             Color color = new Color(estivalue.ELs[i].x, estivalue.ELs[i].y, estivalue.ELs[i].z, 1);
             float intensity = Vector3.Dot(estivalue.ELs[i],new Vector3(lr,lg,lb));
-
             LIghts[i] = CreateLight(position, color, light, intensity, parent);
             Cubes[i] = CreateCube(position, Cube, parent);
-            EstiPosition[(int)position.x + (int)position.y * width] = new Vector4(1, 0, 0, 1);
         }
         ApplyVector4ArrayToTexture(EstiPosition, ResultPositiontexture);
         ResultPositionPlane.GetComponent<Renderer>().material.mainTexture = ResultPositiontexture;
@@ -128,15 +126,19 @@ public class CPURunEstimation : MonoBehaviour
         }
         return lightInstance;
     }
-    Vector3 PolarTo3DPosition(Vector2 Polar)
+    public static Vector3 PolarToCartesian(float phi, float theta, float radius = 1.0f)
     {
-        float r = 1.0f;
-        float x = r * Mathf.Sin(Polar.y) * Mathf.Cos(Polar.x);
-        float y = r * Mathf.Cos(Polar.y);
-        float z = r * Mathf.Sin(Polar.y) * Mathf.Cos(Polar.x);
+        // x = r * sin(É∆) * cos(É”)
+        float x = radius * Mathf.Sin(theta) * Mathf.Cos(phi);
+
+        // y = r * cos(É∆)
+        float y = radius * Mathf.Cos(theta);
+
+        // z = r * sin(É∆) * sin(É”)
+        float z = radius * Mathf.Sin(theta) * Mathf.Sin(phi);
+
         return new Vector3(x, y, z);
     }
-
     EstiVales Estimation()
     {
         width = LDRtex.width; height = LDRtex.height;
@@ -222,7 +224,7 @@ public class CPURunEstimation : MonoBehaviour
                 {
                     float YEp = Irradiances[idx].x * lr + Irradiances[idx].y * lg + Irradiances[idx].z * lb;
                     Vector2 PixelPolar = XY2Polar(x, y, width, height);
-                    Debug.Log("label: " + labels[idx] + " polar: " + PixelPolar * 180f / Mathf.PI);
+               
                     PolarPosion[labels[idx]] += YEp * PixelPolar;
 
                 }
@@ -343,7 +345,7 @@ public class CPURunEstimation : MonoBehaviour
                     componentCount++;
 
                     int count = BFS(x, y, componentCount, InputTex, labels, width, height, LuminanceThreshold);
-                    Debug.Log("componentCount:  " + componentCount + "  : " + count);
+                
                 }
             }
         }
