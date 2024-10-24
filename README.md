@@ -3,6 +3,10 @@ https://doi.org/10.1109/TVCG.2017.2657178
 # Lighting Caluculation (CPU Runtime)
 
 
+https://github.com/user-attachments/assets/5b15f83a-f3be-460b-8569-16d56ff72b69
+
+
+
 
 https://github.com/user-attachments/assets/cdf755ba-3c40-448b-9b0d-fad0f39c23ad
 
