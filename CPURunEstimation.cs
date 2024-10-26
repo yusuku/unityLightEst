@@ -28,11 +28,9 @@ public class CPURunEstimation : MonoBehaviour
         public Vector3[] ELs;
 
         public EstiVales(Vector2[] polar, Vector3[] ELs)
-        {
-          
+        {     
             this.ELs = ELs;
             this.polar = polar;
-
         }
     }
     // Start is called before the first frame update
@@ -47,21 +45,26 @@ public class CPURunEstimation : MonoBehaviour
 
         Vector4[] EstiPosition = new Vector4[width * height];
         float lr = 0.3f, lg = 0.59f, lb = 0.11f;
+        
         for (int i = 1; i < estivalue.polar.Length; i++)
         {
-
             var p = estivalue.polar[i];
-            Vector2 XYposition = Polar2XY(p.x, p.y, width, height);
-            EstiPosition[(int)XYposition.x + (int)XYposition.y * width] = new Vector4(1, 0, 0, 1);
-
 
             Vector3 position = PolarToCartesian(p.x, p.y);
             Color color = new Color(estivalue.ELs[i].x, estivalue.ELs[i].y, estivalue.ELs[i].z, 1);
             float intensity = Vector3.Dot(estivalue.ELs[i], new Vector3(lr, lg, lb));
             LIghts[i] = CreateLight(position, color, light, intensity, parent);
-            Cubes[i] = CreateCube(position,Cube,parent);
-            
+            Cubes[i] = CreateCube(position, color,Cube, parent);
+           
         }
+        for (int i = 1; i < estivalue.polar.Length; i++)
+        {
+           
+            float intensity = Vector3.Dot(estivalue.ELs[i], new Vector3(lr, lg, lb));
+            Vector2 XYposition = Polar2XY(estivalue.polar[i].x, estivalue.polar[i].y, width, height);
+            EstiPosition[(int)XYposition.x + (int)XYposition.y * width] = new Vector4(intensity, 0, 0, 1);
+        }
+
         ResultPositiontexture = new Texture2D(width, height, TextureFormat.RGB24, false);
         
 
@@ -85,29 +88,36 @@ public class CPURunEstimation : MonoBehaviour
 
         Vector4[] EstiPosition = new Vector4[width * height];
         float lr = 0.3f, lg = 0.59f, lb = 0.11f;
-        for (int i=1;i< estivalue.polar.Length; i++)
+       
+        for (int i = 1; i < estivalue.polar.Length; i++)
         {
             var p = estivalue.polar[i];
-          
-            Vector2 XYposition = Polar2XY(p.x, p.y,width,height);
-          
-            EstiPosition[(int)XYposition.x + (int)XYposition.y * width] = new Vector4(1, 0, 0, 1);
 
-
-            Vector3 position = PolarToCartesian(p.x,p.y);
+            Vector3 position = PolarToCartesian(p.x, p.y);
             Color color = new Color(estivalue.ELs[i].x, estivalue.ELs[i].y, estivalue.ELs[i].z, 1);
-            float intensity = Vector3.Dot(estivalue.ELs[i],new Vector3(lr,lg,lb));
+            float intensity = Vector3.Dot(estivalue.ELs[i], new Vector3(lr, lg, lb));
             LIghts[i] = CreateLight(position, color, light, intensity, parent);
-            Cubes[i] = CreateCube(position, Cube, parent);
+            Cubes[i] = CreateCube(position,color, Cube, parent);
         }
+        for (int i = 1; i < estivalue.polar.Length; i++)
+        {
+
+            float intensity = Vector3.Dot(estivalue.ELs[i], new Vector3(lr, lg, lb));
+            Vector2 XYposition = Polar2XY(estivalue.polar[i].x, estivalue.polar[i].y, width, height);
+            EstiPosition[(int)XYposition.x + (int)XYposition.y * width] = new Vector4(intensity , 0, 0, 1);
+        }
+
+
+
         ApplyVector4ArrayToTexture(EstiPosition, ResultPositiontexture);
         ResultPositionPlane.GetComponent<Renderer>().material.mainTexture = ResultPositiontexture;
 
     }
 
-    GameObject CreateCube(Vector3 position,GameObject cube, Transform parent)
+    GameObject CreateCube(Vector3 position,Color  color,GameObject cube, Transform parent)
     {
         GameObject cubeInstance = Instantiate(cube, position, Quaternion.identity, parent);
+        cubeInstance.GetComponent<Renderer>().material.color = color;
         
         return cubeInstance;
     }
