@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
@@ -18,7 +18,7 @@ public class CPURunEstimation : MonoBehaviour
     public GameObject IrradiancePlane;
     public GameObject ResultPositionPlane;
 
-    
+
     int width, height;
     Texture2D ResultPositiontexture;
 
@@ -28,7 +28,7 @@ public class CPURunEstimation : MonoBehaviour
         public Vector3[] ELs;
 
         public EstiVales(Vector2[] polar, Vector3[] ELs)
-        {     
+        {
             this.ELs = ELs;
             this.polar = polar;
         }
@@ -40,12 +40,12 @@ public class CPURunEstimation : MonoBehaviour
         EstiVales estivalue = Estimation();
 
         LIghts = new GameObject[estivalue.polar.Length];
-        Cubes= new GameObject[estivalue.polar.Length];
+        Cubes = new GameObject[estivalue.polar.Length];
 
 
         Vector4[] EstiPosition = new Vector4[width * height];
         float lr = 0.3f, lg = 0.59f, lb = 0.11f;
-        
+
         for (int i = 1; i < estivalue.polar.Length; i++)
         {
             var p = estivalue.polar[i];
@@ -54,19 +54,19 @@ public class CPURunEstimation : MonoBehaviour
             Color color = new Color(estivalue.ELs[i].x, estivalue.ELs[i].y, estivalue.ELs[i].z, 1);
             float intensity = Vector3.Dot(estivalue.ELs[i], new Vector3(lr, lg, lb));
             LIghts[i] = CreateLight(position, color, light, intensity, parent);
-            Cubes[i] = CreateCube(position, color,Cube, parent);
-           
+            Cubes[i] = CreateCube(position, color, Cube, parent);
+
         }
         for (int i = 1; i < estivalue.polar.Length; i++)
         {
-           
+
             float intensity = Vector3.Dot(estivalue.ELs[i], new Vector3(lr, lg, lb));
             Vector2 XYposition = Polar2XY(estivalue.polar[i].x, estivalue.polar[i].y, width, height);
             EstiPosition[(int)XYposition.x + (int)XYposition.y * width] = new Vector4(intensity, 0, 0, 1);
         }
 
         ResultPositiontexture = new Texture2D(width, height, TextureFormat.RGB24, false);
-        
+
 
     }
 
@@ -82,29 +82,31 @@ public class CPURunEstimation : MonoBehaviour
             }
         }
         EstiVales estivalue = Estimation();
-        
+
         LIghts = new GameObject[estivalue.polar.Length];
         Cubes = new GameObject[estivalue.polar.Length];
 
         Vector4[] EstiPosition = new Vector4[width * height];
         float lr = 0.3f, lg = 0.59f, lb = 0.11f;
-       
+
         for (int i = 1; i < estivalue.polar.Length; i++)
         {
             var p = estivalue.polar[i];
 
             Vector3 position = PolarToCartesian(p.x, p.y);
             Color color = new Color(estivalue.ELs[i].x, estivalue.ELs[i].y, estivalue.ELs[i].z, 1);
+            color = new Color(1,1,1,1)- color;
+            color.a = lr;
             float intensity = Vector3.Dot(estivalue.ELs[i], new Vector3(lr, lg, lb));
             LIghts[i] = CreateLight(position, color, light, intensity, parent);
-            Cubes[i] = CreateCube(position,color, Cube, parent);
+            Cubes[i] = CreateCube(position, color, Cube, parent);
         }
         for (int i = 1; i < estivalue.polar.Length; i++)
         {
 
             float intensity = Vector3.Dot(estivalue.ELs[i], new Vector3(lr, lg, lb));
             Vector2 XYposition = Polar2XY(estivalue.polar[i].x, estivalue.polar[i].y, width, height);
-            EstiPosition[(int)XYposition.x + (int)XYposition.y * width] = new Vector4(intensity , 0, 0, 1);
+            EstiPosition[(int)XYposition.x + (int)XYposition.y * width] = new Vector4(intensity, 0, 0, 1);
         }
 
 
@@ -114,11 +116,11 @@ public class CPURunEstimation : MonoBehaviour
 
     }
 
-    GameObject CreateCube(Vector3 position,Color  color,GameObject cube, Transform parent)
+    GameObject CreateCube(Vector3 position, Color color, GameObject cube, Transform parent)
     {
         GameObject cubeInstance = Instantiate(cube, position, Quaternion.identity, parent);
         cubeInstance.GetComponent<Renderer>().material.color = color;
-        
+
         return cubeInstance;
     }
 
@@ -128,23 +130,23 @@ public class CPURunEstimation : MonoBehaviour
         Light directionalLight = lightInstance.GetComponent<Light>();
         if (directionalLight != null)
         {
-            directionalLight.type = LightType.Directional;  // ƒ‰ƒCƒgƒ^ƒCƒv‚ğƒfƒBƒŒƒNƒVƒ‡ƒiƒ‹‚Éİ’è
-            directionalLight.color = color;                 // ƒ‰ƒCƒg‚ÌF‚ğİ’è
-            directionalLight.intensity = intensity;         // ŒvZ‚µ‚½‹­“x‚ğg—p
-            directionalLight.transform.LookAt(Vector3.zero); // Œ´“_‚ÉŒü‚¯‚é
+            directionalLight.type = LightType.Directional;  // ï¿½ï¿½ï¿½Cï¿½gï¿½^ï¿½Cï¿½vï¿½ï¿½ï¿½fï¿½Bï¿½ï¿½ï¿½Nï¿½Vï¿½ï¿½ï¿½iï¿½ï¿½ï¿½Éİ’ï¿½
+            directionalLight.color = color;                 // ï¿½ï¿½ï¿½Cï¿½gï¿½ÌFï¿½ï¿½İ’ï¿½
+            directionalLight.intensity = intensity;         // ï¿½vï¿½Zï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½xï¿½ï¿½ï¿½gï¿½p
+            directionalLight.transform.LookAt(Vector3.zero); // ï¿½ï¿½ï¿½_ï¿½ÉŒï¿½ï¿½ï¿½ï¿½ï¿½
             directionalLight.shadows = LightShadows.Soft;
         }
         return lightInstance;
     }
     public static Vector3 PolarToCartesian(float phi, float theta, float radius = 1.0f)
     {
-        // x = r * sin(ƒÆ) * cos(ƒÓ)
+        // x = r * sin(ï¿½ï¿½) * cos(ï¿½ï¿½)
         float x = radius * Mathf.Sin(theta) * Mathf.Cos(phi);
 
-        // y = r * cos(ƒÆ)
+        // y = r * cos(ï¿½ï¿½)
         float y = radius * Mathf.Cos(theta);
 
-        // z = r * sin(ƒÆ) * sin(ƒÓ)
+        // z = r * sin(ï¿½ï¿½) * sin(ï¿½ï¿½)
         float z = radius * Mathf.Sin(theta) * Mathf.Sin(phi);
 
         return new Vector3(x, y, z);
@@ -234,7 +236,7 @@ public class CPURunEstimation : MonoBehaviour
                 {
                     float YEp = Irradiances[idx].x * lr + Irradiances[idx].y * lg + Irradiances[idx].z * lb;
                     Vector2 PixelPolar = XY2Polar(x, y, width, height);
-               
+
                     PolarPosion[labels[idx]] += YEp * PixelPolar;
 
                 }
@@ -287,31 +289,31 @@ public class CPURunEstimation : MonoBehaviour
     {
         Color[] colors = new Color[vectors.Length];
 
-        // Vector3‚ğColor‚É•ÏŠ· (x, y, z ‚ğ RGB ‚Éƒ}ƒbƒsƒ“ƒO)
+        // Vector3ï¿½ï¿½Colorï¿½É•ÏŠï¿½ (x, y, z ï¿½ï¿½ RGB ï¿½Éƒ}ï¿½bï¿½sï¿½ï¿½ï¿½O)
         for (int i = 0; i < vectors.Length; i++)
         {
             Vector4 v = vectors[i];
             colors[i] = new Color(v.x, v.y, v.z, 1);
         }
 
-        // ƒeƒNƒXƒ`ƒƒ‚ÉFƒf[ƒ^‚ğ“K—p
+        // ï¿½eï¿½Nï¿½Xï¿½`ï¿½ï¿½ï¿½ÉFï¿½fï¿½[ï¿½^ï¿½ï¿½Kï¿½p
         tex.SetPixels(colors);
-        tex.Apply();  // Apply() ‚ğŒÄ‚Î‚È‚¢‚Æ•ÏX‚ª”½‰f‚³‚ê‚È‚¢
+        tex.Apply();  // Apply() ï¿½ï¿½ï¿½Ä‚Î‚È‚ï¿½ï¿½Æ•ÏXï¿½ï¿½ï¿½ï¿½ï¿½fï¿½ï¿½ï¿½ï¿½È‚ï¿½
     }
     void ApplyIntArrayToTexture(int[] vectors, Texture2D tex)
     {
         Color[] colors = new Color[vectors.Length];
 
-        // Vector3‚ğColor‚É•ÏŠ· (x, y, z ‚ğ RGB ‚Éƒ}ƒbƒsƒ“ƒO)
+        // Vector3ï¿½ï¿½Colorï¿½É•ÏŠï¿½ (x, y, z ï¿½ï¿½ RGB ï¿½Éƒ}ï¿½bï¿½sï¿½ï¿½ï¿½O)
         for (int i = 0; i < vectors.Length; i++)
         {
             int v = vectors[i];
             colors[i] = new Color(v, v, v, 1);
         }
 
-        // ƒeƒNƒXƒ`ƒƒ‚ÉFƒf[ƒ^‚ğ“K—p
+        // ï¿½eï¿½Nï¿½Xï¿½`ï¿½ï¿½ï¿½ÉFï¿½fï¿½[ï¿½^ï¿½ï¿½Kï¿½p
         tex.SetPixels(colors);
-        tex.Apply();  // Apply() ‚ğŒÄ‚Î‚È‚¢‚Æ•ÏX‚ª”½‰f‚³‚ê‚È‚¢
+        tex.Apply();  // Apply() ï¿½ï¿½ï¿½Ä‚Î‚È‚ï¿½ï¿½Æ•ÏXï¿½ï¿½ï¿½ï¿½ï¿½fï¿½ï¿½ï¿½ï¿½È‚ï¿½
     }
 
     Vector4[] InverseToneMapping(RenderTexture LDR)
@@ -335,7 +337,7 @@ public class CPURunEstimation : MonoBehaviour
 
         cs.Dispatch(id, groupcountX, groupcountY, groupcountZ);
         HDRtexBuffer.GetData(HDRtex);
-
+        HDRtexBuffer.Release();
 
         return HDRtex;
     }
@@ -355,7 +357,7 @@ public class CPURunEstimation : MonoBehaviour
                     componentCount++;
 
                     int count = BFS(x, y, componentCount, InputTex, labels, width, height, LuminanceThreshold);
-                
+
                 }
             }
         }
@@ -410,10 +412,10 @@ public class CPURunEstimation : MonoBehaviour
 
         return polar;
     }
-    Vector2 Polar2XY( float phi,float theta, int width, int height)
+    Vector2 Polar2XY(float phi, float theta, int width, int height)
     {
         Vector2 xy;
-        float x = width * (1 -( (phi + Mathf.PI) / (2 * Mathf.PI)));
+        float x = width * (1 - ((phi + Mathf.PI) / (2 * Mathf.PI)));
         float y = height * (Mathf.PI - theta) / Mathf.PI;
         xy = new Vector2(x, y);
 
