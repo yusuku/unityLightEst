@@ -91,15 +91,27 @@ public class CPURunEstimation : MonoBehaviour
 
         for (int i = 1; i < estivalue.polar.Length; i++)
         {
-            var p = estivalue.polar[i];
-
-            Vector3 position = PolarToCartesian(p.x, p.y);
-            Color color = new Color(estivalue.ELs[i].x, estivalue.ELs[i].y, estivalue.ELs[i].z, 1);
-            color = new Color(1,1,1,1)- color;
-            color.a = lr;
+            
+            
             float intensity = Vector3.Dot(estivalue.ELs[i], new Vector3(lr, lg, lb));
-            LIghts[i] = CreateLight(position, color, light, intensity, parent);
-            Cubes[i] = CreateCube(position, color, Cube, parent);
+            
+            
+            if (intensity > 0.5f)
+            {
+                var p = estivalue.polar[i];
+
+                Vector3 position = PolarToCartesian(p.x, p.y);
+                Color color = new Color(estivalue.ELs[i].x, estivalue.ELs[i].y, estivalue.ELs[i].z, 1);
+                color.a = 1;
+                Color Debugcolor = color;
+                LIghts[i] = CreateLight(position, color, light, intensity, parent);
+                Debug.Log("light: " + i + " position: " + LIghts[i].transform + " intensity :" + intensity);
+                Debugcolor= Color.red;
+                Cubes[i] = CreateCube(position, Debugcolor, Cube, parent);
+            }
+            
+            
+            
         }
         for (int i = 1; i < estivalue.polar.Length; i++)
         {
